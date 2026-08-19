@@ -23,9 +23,20 @@ void printMatrix(vector<vector<int>> matrix) {
 
     for(int i = 0; i < size; i++) {
         for(int j = 0; j < size; j++) {
-            if(matrix[i][j] != -1) {
-                cout << i+1 << " -> " << j+1 << " : " << matrix[i][j] << endl;
-            } 
+                cout << setw(3) << matrix[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+void setMatrixDiagonalToZero(vector<vector<int>> &matrix) {
+    int size = matrix.size();
+
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
+            if(i == j) {
+                matrix[i][j] = 0;
+            }
         }
     }
 }
@@ -89,6 +100,7 @@ int main(int argc, char* argv[]) {
 
     // Inicializa a Matriz de Adjacência com pesos -1:
     vector<vector<int>> matrix(nodes, vector<int>(nodes, -1));
+    setMatrixDiagonalToZero(matrix);
 
     vector<vector<Node>> adjacencyList(nodes);
     while(getline(file, line)) {
