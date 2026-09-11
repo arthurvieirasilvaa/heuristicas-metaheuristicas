@@ -6,7 +6,7 @@
 using namespace std;
 using namespace std::chrono;
 
-void print_permutation(vector<int> permutation) {
+void print_permutation(const vector<int> &permutation) {
     for(int i = 0; i < permutation.size(); i++) {
         cout << permutation[i] << " ";
     }
