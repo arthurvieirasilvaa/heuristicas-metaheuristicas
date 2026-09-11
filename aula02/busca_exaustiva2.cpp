@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <chrono>
 
 using namespace std;
-using namespace std::chrono;
 
 int main(int argc, char* argv[]) {
     if(argc < 2) {
@@ -26,22 +24,6 @@ int main(int argc, char* argv[]) {
     int n = stoi(line);
     long long total = 1LL << n;
     cout << total << endl;
-
-    auto start = steady_clock::now();
-
-    int bit;
-    for(long long i = 0; i < total; i++) {
-        for(long long j = n-1; j >= 0; j--) {
-            bit = (i >> j) & 1LL;
-            cout << bit;
-        }
-        cout << endl;
-    }
-
-    auto end = steady_clock::now();
-
-    auto duration = duration_cast<microseconds>(end - start);
-    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
 
     file.close();
 
