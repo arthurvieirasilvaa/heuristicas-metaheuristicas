@@ -6,6 +6,7 @@
 #include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 constexpr int MAX_ITERATIONS = 1000; // número máximo de iterações
 
@@ -19,7 +20,7 @@ string generate_initial_solution(int n, int wmax, const vector<int> &weights) {
         adiciona uma camada de variação:
     */
     random_device rd;
-    auto seed = rd() ^ chrono::system_clock::now().time_since_epoch().count();
+    auto seed = rd() ^ system_clock::now().time_since_epoch().count();
     static mt19937 gen(seed);
 
     // Distribuição uniforme entre 0 e 1 (inclusive):
