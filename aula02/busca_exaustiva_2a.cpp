@@ -6,8 +6,8 @@
 using namespace std;
 using namespace std::chrono;
 
-void print_permutation(const vector<int> &permutation) {
-    for(int i = 0; i < permutation.size(); i++) {
+void print_permutation(const vector<int> &permutation, int n) {
+    for(int i = 0; i < n; i++) {
         cout << permutation[i] << " ";
     }
     cout << endl;
@@ -15,7 +15,7 @@ void print_permutation(const vector<int> &permutation) {
 
 void generate_permutation(vector<int> &permutation, int begin, int n) {
     if(begin == n) {
-        print_permutation(permutation);
+        print_permutation(permutation, n);
         return;
     }
     

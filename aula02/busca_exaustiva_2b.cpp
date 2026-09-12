@@ -37,8 +37,8 @@ void setMatrixDiagonalToZero(vector<vector<int>> &matrix) {
     }
 }
 
-void print_permutation(const vector<int> &permutation) {
-    for(int i = 0; i < permutation.size(); i++) {
+void print_permutation(const vector<int> &permutation, int nodes) {
+    for(int i = 0; i < nodes; i++) {
         cout << permutation[i] << " ";
     }
     cout << endl;
@@ -46,7 +46,7 @@ void print_permutation(const vector<int> &permutation) {
 
 void generate_permutation(vector<vector<int>> &matrix, vector<int> &permutation, int begin, int nodes) {
     if(begin == nodes) {
-        print_permutation(permutation);
+        print_permutation(permutation, nodes);
         return;
     }
     
