@@ -6,7 +6,7 @@
 #include <chrono>
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 
 void matrixAddEdge(vector<vector<int>> &matrix, int v1, int v2, int weight) {
     matrix[v1][v2] = weight;

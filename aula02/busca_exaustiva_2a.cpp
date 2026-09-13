@@ -4,7 +4,7 @@
 #include <chrono>
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 
 void print_permutation(const vector<int> &permutation, int n) {
     for(int i = 0; i < n; i++) {

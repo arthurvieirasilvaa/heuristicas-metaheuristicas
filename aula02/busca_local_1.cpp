@@ -4,14 +4,15 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <algorithm>
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 
 constexpr int MAX_ITERATIONS = 1000; // número máximo de iterações
 
 string generate_initial_solution(int n, int wmax, const vector<int> &weights) {
-    string initial_solution = "";
+    string initial_solution(n, '0'); // nenhum item na mochila
 
     /*
         Gerador não-determinístico para inicializar o Mersenne Twister. Se
@@ -21,31 +22,39 @@ string generate_initial_solution(int n, int wmax, const vector<int> &weights) {
     */
     random_device rd;
     auto seed = rd() ^ system_clock::now().time_since_epoch().count();
-    static mt19937 gen(seed);
+    mt19937 gen(seed);
 
     // Distribuição uniforme entre 0 e 1 (inclusive):
     uniform_int_distribution<int> dist(0, 1);
 
+    /*
+        Criando um vetor com os índices de 0 até n-1 e reorganizando
+        aleatoriamente a ordem de inserção:
+    */
+    vector<int> indexes;
+    for(int i = 0; i < n; i++) {
+        indexes.push_back(i);
+    }
+    shuffle(indexes.begin(), indexes.end(), gen);
+
+    cout << "Indices: ";
+    for(int i = 0; i < n; i++) {
+        cout << indexes[i] << " ";
+    }
+    cout << endl;
+
     int current_weight = 0;
     for(int i = 0; i < n; i++) {
-        if(dist(gen) == 0) {
-            initial_solution += '0';
-        }
+        int index = indexes[i];
 
-        else {
-            /*
-                Verifica se a adição do item não ultrapassará a capacidade da
-                mochila:
-            */
-            if(current_weight + weights[i] <= wmax) {
-                initial_solution += '1';
-                current_weight += weights[i];
-            }
-
-            else {
-                initial_solution += '0';
-            }
-        }
+        /*
+            Verifica se a adição do item não ultrapassará a capacidade da
+            mochila:
+        */
+        if(current_weight + weights[index] <= wmax) {
+            initial_solution[index] = '1';
+            current_weight += weights[index];
+        }   
     }
 
     return initial_solution;
@@ -92,7 +101,7 @@ void knapsack(int n, int wmax, const vector<int> &profits, const vector<int> &we
     int current_iteration = 0;
     string neighbor;
     int new_profit, new_weight;
-    while (current_iteration < MAX_ITERATIONS and solution_improved) {
+    while (current_iteration < MAX_ITERATIONS && solution_improved) {
         solution_improved = false;
 
         // Gerando a vizinhança da solução atual:
@@ -110,11 +119,6 @@ void knapsack(int n, int wmax, const vector<int> &profits, const vector<int> &we
 
             new_profit = calculate_profit(profits, neighbor);
             new_weight = calculate_weight(weights, neighbor);
-
-            cout << "Vizinho " << i << ": " << neighbor << endl;
-            cout << "Profit do vizinho " << i << ": " << new_profit << endl;
-            cout << "Peso do vizinho " << i << ": " << new_weight << endl;
-            cout << "--------------------------------" << endl;
             
             // Política de melhoria (First Improvement):
             if((new_profit > current_profit) && new_weight <= wmax) {

@@ -3,7 +3,7 @@
 #include <chrono>
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 
 int main(int argc, char* argv[]) {
     if(argc < 2) {
