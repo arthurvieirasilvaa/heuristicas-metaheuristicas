@@ -35,7 +35,7 @@ int calculate_distance(int xi, int yi, int xj, int yj) {
     return dij;
 }
 
-vector<int> nearest_neighbor(vector<vector<int>> &matrix, int n, int initial_city) {
+vector<int> greedy_nearest_neighbor(vector<vector<int>> &matrix, int n, int initial_city) {
     vector<int> solution;
     vector<bool> visited_cities(n, false);
 
@@ -75,7 +75,7 @@ vector<int> nearest_neighbor(vector<vector<int>> &matrix, int n, int initial_cit
     return solution;
 }
 
-vector<int> farthest_neighbor(vector<vector<int>> &matrix, int n, int initial_city) {
+vector<int> greedy_farthest_neighbor(vector<vector<int>> &matrix, int n, int initial_city) {
     vector<int> solution;
     vector<bool> visited_cities(n, false);
 
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     cout << "Numero de cidades: " << n << endl;
 
     // Gerando a solução gulosa (usando o vizinho mais próximo):
-    vector<int> solution = nearest_neighbor(matrix, n, 1);
+    vector<int> solution = greedy_nearest_neighbor(matrix, n, 1);
 
     cout << "Solucao gulosa (usando o vizinho mais proximo): ";
     print_solution(solution);
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
     cout << "--------------------------------" << endl;
 
     // Gerando a solução gulosa (usando o vizinho mais distante):
-    solution = farthest_neighbor(matrix, n, 1);
+    solution = greedy_farthest_neighbor(matrix, n, 1);
 
     cout << "Solucao gulosa (usando o vizinho mais distante): ";
     print_solution(solution);
