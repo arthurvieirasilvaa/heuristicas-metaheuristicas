@@ -75,6 +75,46 @@ vector<int> nearest_neighbor(vector<vector<int>> &matrix, int n, int initial_cit
     return solution;
 }
 
+vector<int> farthest_neighbor(vector<vector<int>> &matrix, int n, int initial_city) {
+    vector<int> solution;
+    vector<bool> visited_cities(n, false);
+
+    // Verifica se a cidade inicial é válida:
+    if(initial_city < 1 || initial_city > n) {
+        cout << "A cidade inicial " << initial_city << " fornecida está inválida!";
+        exit(1);
+    }
+
+    solution.push_back(initial_city);
+
+    int city = initial_city-1;
+    visited_cities[city] = true; // marca a cidade como visitada
+    int greatest_distance, farthest_city;
+    while (solution.size() < n) {
+        greatest_distance = 0;
+        farthest_city = -1;
+
+        for(int i = 0; i < n; i++) {
+            if(matrix[city][i] > greatest_distance && visited_cities[i] == false) {
+                greatest_distance = matrix[city][i];
+                farthest_city = i;
+            }
+        }
+
+
+        // Não encontrou nenhuma cidade disponível:
+        if(farthest_city == -1) {
+            break;
+        }
+
+        solution.push_back(farthest_city+1); 
+        city = farthest_city;
+        visited_cities[city] = true; // marca a cidade como visitada
+    }
+    
+    return solution;
+}
+
 int calculate_total_distance(vector<vector<int>> &matrix, vector<int> &solution, int n) {
     int distance = 0;
     for(int i = 0; i < n-1; i++) {
@@ -181,7 +221,7 @@ int main(int argc, char* argv[]) {
 
     cout << "Numero de cidades: " << n << endl;
 
-    // Gerando a solução inicial gulosa (usando o vizinho mais próximo):
+    // Gerando a solução gulosa (usando o vizinho mais próximo):
     vector<int> solution = nearest_neighbor(matrix, n, 1);
 
     cout << "Solucao gulosa (usando o vizinho mais proximo): ";
@@ -191,9 +231,28 @@ int main(int argc, char* argv[]) {
     cout << "Distancia total da solucao gulosa (usando o vizinho mais proximo): " << greedy_total_distance << endl;
     cout << "--------------------------------" << endl;
 
+    // Aplicando a Busca Local na solução gulosa (usando o vizinho mais próximo):
     tsp(matrix, solution, n);
-
     int local_total_distance = calculate_total_distance(matrix, solution, n);
+    
+    cout << "Solucao apos a Busca Local: ";
+    print_solution(solution);
+    cout << "Distancia total da solucao apos a Busca Local: " << local_total_distance << endl;
+    cout << "--------------------------------" << endl;
+
+    // Gerando a solução gulosa (usando o vizinho mais distante):
+    solution = farthest_neighbor(matrix, n, 1);
+
+    cout << "Solucao gulosa (usando o vizinho mais distante): ";
+    print_solution(solution);
+
+    greedy_total_distance = calculate_total_distance(matrix, solution, n);
+    cout << "Distancia total da solucao gulosa (usando o vizinho mais distante): " << greedy_total_distance << endl;
+    cout << "--------------------------------" << endl;
+
+    // Aplicando a Busca Local na solução gulosa (usando o vizinho mais distante):
+    tsp(matrix, solution, n);
+    local_total_distance = calculate_total_distance(matrix, solution, n);
     
     cout << "Solucao apos a Busca Local: ";
     print_solution(solution);
