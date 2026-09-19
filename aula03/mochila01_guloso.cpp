@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <cfloat>
+#include <climits>
 
 using namespace std;
 
@@ -37,6 +38,36 @@ string greedy_by_weight_to_value_ratio(int n, int wmax, const vector<int> &weigh
         for(int i = 0; i < n; i++) {
             if(weight_to_value[i] < best_weight_to_value && current_weight + weights[i] <= wmax && backpack_items[i] == false) {
                 best_weight_to_value = weight_to_value[i];
+                item_index = i;
+            }
+        }
+
+        // Não encontrou nenhum item que caiba:
+        if(item_index == -1) {
+            break;
+        }
+
+        solution[item_index] = '1';
+        backpack_items[item_index] = true; // marca o item como adicionado
+        current_weight += weights[item_index];
+    }
+
+    return solution;
+}
+
+string greedy_lowest_weight_items(int n, int wmax, const vector<int> &weights) {
+    string solution(n, '0'); // nenhum item na mochila
+    vector<bool> backpack_items(n, false);
+
+    int current_weight = 0;
+    int lowest_weight, item_index;
+    while (current_weight < wmax) {
+        lowest_weight = INT_MAX;
+        item_index = -1;
+
+        for(int i = 0; i < n; i++) {
+            if(weights[i] < lowest_weight && current_weight + weights[i] <= wmax && backpack_items[i] == false) {
+                lowest_weight = weights[i];
                 item_index = i;
             }
         }
@@ -191,6 +222,26 @@ int main(int argc, char *argv[]) {
     */
     knapsack(n, wmax, profits, weights, solution);
     int total_profit = calculate_profit(profits, solution);
+
+    cout << "Solucao apos a Busca Local: " << solution << endl;
+    cout << "Profit apos a Busca Local: " << total_profit << endl;
+    cout << "--------------------------------" << endl;
+
+    // Gerando a solução gulosa (usando os itens mais leves):
+    solution = greedy_lowest_weight_items(n, wmax, weights);
+    cout << "Solucao gulosa (usando os itens mais leves): " << solution << endl;
+
+    greedy_profit = calculate_profit(profits, solution);
+    greedy_weight = calculate_weight(weights, solution);
+
+    cout << "Profit da solucao gulosa (usando os itens mais leves): " << greedy_profit << endl;
+    cout << "Peso da solucao gulosa (usando os itens mais leves): " << greedy_weight << endl;
+    cout << "--------------------------------" << endl;
+
+    
+    // Aplicando a Busca Local na solução gulosa (usando os itens mais leves):
+    knapsack(n, wmax, profits, weights, solution);
+    total_profit = calculate_profit(profits, solution);
 
     cout << "Solucao apos a Busca Local: " << solution << endl;
     cout << "Profit apos a Busca Local: " << total_profit << endl;
