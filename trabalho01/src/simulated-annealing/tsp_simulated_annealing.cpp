@@ -209,6 +209,7 @@ int main(int argc, char* argv[]) {
     auto start = steady_clock::now();
 
     vector<int> solution = simulated_annealing(matrix, n);
+    
     auto end = steady_clock::now();
 
     auto duration = duration_cast<microseconds>(end - start);
