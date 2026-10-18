@@ -38,7 +38,7 @@ void printMatrix(const vector<vector<int>> &matrix) {
 int calculate_distance(double xi, double yi, double xj, double yj) {
     double xd = xi - xj;
     double yd = yi - yj;
-    double dij = (int) (sqrt(xd * xd + yd * yd) + 0.5);
+    int dij = (int) (sqrt(xd * xd + yd * yd) + 0.5);
 
     return dij;
 }

@@ -214,7 +214,8 @@ vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city) {
 
         s = best_neighbor;
 
-        T[indexes.at(0)][indexes.at(1) - indexes.at(0) - 1] = TABU_TENURE; // atualiza a Matriz Tabu T:
+        // Atualiza a Matriz Tabu T:
+        T[indexes.at(0)][indexes.at(1) - indexes.at(0) - 1] = TABU_TENURE;
 
         if(best_neighbor_total_distance < best_total_distance) {
             sbest = s;
