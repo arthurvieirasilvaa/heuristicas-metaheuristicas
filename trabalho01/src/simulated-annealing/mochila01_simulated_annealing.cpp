@@ -174,7 +174,7 @@ string simulated_annealing(int n, int wmax, const vector<int> &profits, const ve
 int main(int argc, char *argv[]) {
     if(argc < 2) {
         cout << "Argumentos invalidos!" << endl;
-        cout << "Formato correto: ./mochila01_guloso <nome_do_arquivo_de_entrada.txt>" << endl;
+        cout << "Formato correto: ./mochila01_simulated_annealing <nome_do_arquivo_de_entrada>" << endl;
         exit(1);
     }
 

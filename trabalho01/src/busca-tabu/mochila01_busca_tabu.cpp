@@ -225,7 +225,7 @@ string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int
 int main(int argc, char *argv[]) {
     if(argc < 2) {
         cout << "Argumentos invalidos!" << endl;
-        cout << "Formato correto: ./mochila01_guloso <nome_do_arquivo_de_entrada.txt>" << endl;
+        cout << "Formato correto: ./mochila01_busca_tabu <nome_do_arquivo_de_entrada>" << endl;
         exit(1);
     }
 
