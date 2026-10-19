@@ -102,6 +102,8 @@ vector<int> local_search(vector<vector<int>> &matrix, int n, vector<int> &s) {
 }
 
 void create_gc(vector<vector<int>> &matrix, vector<int> s, vector<int> LC, vector<int> &gc) {
+    gc.clear();
+
     int last_city = s[s.size()-1]; // última cidade inserida
 
     int c_distance_to_last_city; // distância do candidato c da LC à última cidade inserida
