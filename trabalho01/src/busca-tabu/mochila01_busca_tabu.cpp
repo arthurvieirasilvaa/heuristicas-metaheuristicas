@@ -10,8 +10,17 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int MAX_ITERATIONS_WITHOUT_IMPROVEMENT = 100; // número máximo de iterações sem melhora
-constexpr int TABU_TENURE = 5; // Duração Tabu
+enum StopCriterion {
+    ITERATIONS_WITHOUT_IMPROVEMENT,
+    TOTAL_ITERATIONS
+};
+
+struct Configuration {
+    const int TABU_TENURE;
+    const int MAX_TOTAL_ITERATIONS;
+    const int MAX_ITERATIONS_WITHOUT_IMPROVEMENT;
+    StopCriterion stop_criterion;
+};
 
 string greedy_by_weight_to_value_ratio(int n, int wmax, const vector<int> &weights, const vector<int> &profits) {
     string solution(n, '0'); // nenhum item na mochila
@@ -128,15 +137,11 @@ int select_oldest_tabu_move(int n, int wmax, string &s, const vector<int> &profi
     return index_new_s;
 }
 
-string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int> &weights, long long p) {
+string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int> &weights, long long p, Configuration configuration) {
     // Gerando a solução gulosa (usando o melhor custo benefício - peso/valor):
     string s = greedy_by_weight_to_value_ratio(n, wmax, weights, profits); // solução inicial
-    cout << "Solucao gulosa (usando o melhor custo beneficio - peso/valor): " << s << endl;
 
     int current_profit = calculate_profit(profits, s);
-    cout << "Profit da solucao gulosa (usando o melhor custo beneficio - peso/valor): " << current_profit << endl;
-    cout << "Peso da solucao gulosa (usando o melhor custo beneficio - peso/valor): " << calculate_weight(weights, s) << endl;
-    cout << "--------------------------------" << endl;
 
     string sbest = s;
     int iter = 0;
@@ -150,7 +155,8 @@ string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int
     int new_weight;
     long long best_score = current_profit;
     long long best_neighbor_score;
-    while (iterations_without_improvement < MAX_ITERATIONS_WITHOUT_IMPROVEMENT) {
+    bool running = true;
+    while (running) {
         iter++;
         index_new_s = -1;
         best_neighbor = "";
@@ -199,7 +205,7 @@ string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int
         }
 
         s = best_neighbor;
-        T[index_new_s] = TABU_TENURE; // Atualiza a lista tabu T
+        T[index_new_s] = configuration.TABU_TENURE; // Atualiza a lista tabu T
 
         if(best_neighbor_score > best_score) {
             sbest = s;
@@ -211,12 +217,20 @@ string tabu_search(int n, int wmax, const vector<int> &profits, const vector<int
             iterations_without_improvement++;
         }
 
-        cout << "Iteracao: " << iter << endl <<
-        "Movimento: " << index_new_s << endl <<
-        "Profit atual: " << best_neighbor_score << endl <<
-        "Melhor profit: " << best_score << endl <<
-        "--------------------------------" <<
-        endl;
+        // Verifica qual o critério de parada:
+        if(configuration.stop_criterion == ITERATIONS_WITHOUT_IMPROVEMENT) {
+            // Número máximo de iterações:
+            if(iterations_without_improvement >= configuration.MAX_ITERATIONS_WITHOUT_IMPROVEMENT) {
+                running = false;
+            }
+        }
+
+        else if(configuration.stop_criterion == TOTAL_ITERATIONS) {
+            // Número de iterações sem melhorias:
+            if(iter >= configuration.MAX_TOTAL_ITERATIONS) {
+                running = false;
+            }
+        }
     }
 
     return sbest;
@@ -282,10 +296,17 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < profits.size(); i++) {
         p += profits[i];
     }
+    
+    Configuration configuration1 = {10, 1000, 0, TOTAL_ITERATIONS};
+    Configuration configuration2 = {5, 0, 100, ITERATIONS_WITHOUT_IMPROVEMENT};
+
+    cout << "Configuracao 1:" << endl;
 
     auto start = steady_clock::now();
 
-    string sbest = tabu_search(n, wmax, profits, weights, p);
+    string sbest = tabu_search(n, wmax, profits, weights, p, configuration1);
+    cout << "================================================================" << endl;
+    cout << "Solucao: " << sbest << endl;
 
     auto end = steady_clock::now();
 
@@ -293,7 +314,24 @@ int main(int argc, char *argv[]) {
 
     int total_profit = calculate_profit(profits, sbest);
 
-    cout << "Solucao apos a Busca Tabu: " << sbest << endl;
+    cout << "Profit apos a Busca Tabu: " << total_profit << endl;
+
+    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+
+    cout << "Configuracao 2:" << endl;
+
+    start = steady_clock::now();
+
+    sbest = tabu_search(n, wmax, profits, weights, p, configuration2);
+    cout << "================================================================" << endl;
+    cout << "Solucao: " << sbest << endl;
+
+    end = steady_clock::now();
+
+    duration = duration_cast<microseconds>(end - start);
+
+    total_profit = calculate_profit(profits, sbest);
+
     cout << "Profit apos a Busca Tabu: " << total_profit << endl;
 
     cout << "Duracao: " << duration.count() << " microssegundos" << endl;

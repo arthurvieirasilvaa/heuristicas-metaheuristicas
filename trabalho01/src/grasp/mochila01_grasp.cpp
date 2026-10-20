@@ -7,12 +7,16 @@
 #include <chrono>
 #include <algorithm>
 #include <climits>
+#include <numeric>
 
 using namespace std;
 using namespace chrono;
 
-constexpr int MAX_ITERATIONS = 1000;
-constexpr int GRASPMax = 100;
+struct Configuration {
+    double alpha;
+    const int MAX_ITERATIONS;
+    const int GRASPMax;
+};
 
 int calculate_profit(const vector<int> &profits, string current_solution) {
     int profit = 0;
@@ -38,7 +42,7 @@ int calculate_weight(const vector<int> &weights, string current_solution) {
     return weight;
 }
 
-string local_search(int n, int wmax, const vector<int> &profits, const vector<int> &weights, string s) {
+string local_search(int n, int wmax, const vector<int> &profits, const vector<int> &weights, string s, int MAX_ITERATIONS) {
     int current_profit = calculate_profit(profits, s);
     int current_weight = calculate_weight(weights, s);
 
@@ -150,16 +154,16 @@ string random_greedy_construction(int n, int wmax, const vector<int> &profits, c
     return s;
 }
  
-string grasp(int n, int wmax, const vector<int> &profits, const vector<int> &weights, mt19937 &gen) {
+string grasp(int n, int wmax, const vector<int> &profits, const vector<int> &weights, Configuration configuration, mt19937 &gen) {
     string s, sbest;
-    const double alpha = 0.7;
+    const double alpha = configuration.alpha;
     int current_profit;
     int best_total_profit = INT_MIN;
     int iter = 0;
 
-    while (iter < GRASPMax) {
+    while (iter < configuration.GRASPMax) {
         s = random_greedy_construction(n, wmax, profits, weights, alpha, gen);
-        s = local_search(n, wmax, profits, weights, s);
+        s = local_search(n, wmax, profits, weights, s, configuration.MAX_ITERATIONS);
 
         current_profit = calculate_profit(profits, s);
 
@@ -239,20 +243,84 @@ int main(int argc, char *argv[]) {
     auto seed = rd() ^ system_clock::now().time_since_epoch().count();
     mt19937 gen(seed);
 
-    auto start = steady_clock::now();
+    Configuration configuration1 = {0.7, 100, 10};
+    Configuration configuration2 = {0.9, 100, 50};
 
-    string s = grasp(n, wmax, profits, weights, gen);
+    vector<int> profits_results(10);
+    vector<double> durations(10);
+    int total_profit, weight;
 
-    auto end = steady_clock::now();
+    cout << "Configuracao 1:" << endl;
+    cout << "alfa = " << configuration1.alpha << endl;
+    cout << "GRASPMax = " << configuration1.GRASPMax << endl;
 
-    auto duration = duration_cast<microseconds>(end - start);
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
 
-    int total_profit = calculate_profit(profits, s);
+        string s = grasp(n, wmax, profits, weights, configuration1, gen);
 
-    cout << "Solucao apos o GRASP: " << s << endl;
-    cout << "Profit apos o GRASP: " << total_profit << endl;
+        auto end = steady_clock::now();
 
-    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: " << s << endl;
+
+        int total_profit = calculate_profit(profits, s);
+        int weight = calculate_weight(weights, s);
+        cout << "Profit apos o GRASP: " << total_profit << endl;
+        cout << "Peso apos o GRASP: " << weight << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        profits_results[i] = total_profit;
+        durations[i] = duration.count();
+    }
+
+    int best_profit_result = *max_element(profits_results.begin(), profits_results.end());
+    int worst_profit_result = *min_element(profits_results.begin(), profits_results.end());
+    double mean_profits_results = accumulate(profits_results.begin(), profits_results.end(), 0.0) / 10;
+
+    cout << "Melhor profit: " << best_profit_result << endl;
+    cout << "Pior profit: " << worst_profit_result << endl;
+    cout << "Media dos profits: " << mean_profits_results << endl;
+
+    cout << "Configuracao 2:" << endl;
+    cout << "alfa = " << configuration2.alpha << endl;
+    cout << "GRASPMax = " << configuration2.GRASPMax << endl;
+
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
+
+        string s = grasp(n, wmax, profits, weights, configuration2, gen);
+
+        auto end = steady_clock::now();
+
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: " << s << endl;
+
+        int total_profit = calculate_profit(profits, s);
+        int weight = calculate_weight(weights, s);
+        cout << "Profit apos o GRASP: " << total_profit << endl;
+        cout << "Peso apos o GRASP: " << weight << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        profits_results[i] = total_profit;
+        durations[i] = duration.count();
+    }
+
+    best_profit_result = *max_element(profits_results.begin(), profits_results.end());
+    worst_profit_result = *min_element(profits_results.begin(), profits_results.end());
+    mean_profits_results = accumulate(profits_results.begin(), profits_results.end(), 0.0) / 10;
+
+    cout << "Melhor profit: " << best_profit_result << endl;
+    cout << "Pior profit: " << worst_profit_result << endl;
+    cout << "Media dos profits: " << mean_profits_results << endl;
 
     file.close();
 

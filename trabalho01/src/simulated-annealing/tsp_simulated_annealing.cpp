@@ -9,14 +9,25 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <numeric>
 
 using namespace std;
 using namespace chrono;
 
-// Constantes utilizadas
-constexpr double t0 = 1000.0;
-constexpr double alpha = 0.99;
-constexpr int SA_MAX = 1000;
+// Função de resfriamento:
+enum CoolingRate {
+    LINEAR,
+    GEOMETRIC
+};
+
+// Valores utilizados:
+struct Configuration {
+    double t0;
+    double alpha;
+    double beta;
+    const int SA_MAX;
+    CoolingRate cooling_rate;
+};
 
 void matrixAddEdge(vector<vector<int>> &matrix, int v1, int v2, int distance) {
     matrix[v1][v2] = distance;
@@ -95,7 +106,7 @@ vector<int> generate_neighbor(vector<int> solution, int n, mt19937 &gen) {
     return neighbor;
 }
 
-vector<int> simulated_annealing(vector<vector<int>> &matrix, int n) {
+vector<int> simulated_annealing(vector<vector<int>> &matrix, int n, Configuration configuration) {
     /*
         Gerador não-determinístico para inicializar o Mersenne Twister. Se
         random_device for realmente aleatória, a seed será realmente aleatória.
@@ -107,12 +118,8 @@ vector<int> simulated_annealing(vector<vector<int>> &matrix, int n) {
     mt19937 gen(seed);
     uniform_real_distribution<> dist(0.0, 1.0);
 
-    double T = t0; // temperatura inicial
+    double T = configuration.t0; // temperatura inicial
     vector<int> s = generate_initial_solution(n, gen); // solução inicial aleatória
-    cout << "Solucao inicial aleatoria s0: ";
-    print_solution(s);
-
-    cout << "Distancia total da solucao inicial aleatoria s0: " << calculate_total_distance(matrix, s, n) << endl;
 
     vector<int> s_best = s;
     int i = 0;
@@ -120,7 +127,7 @@ vector<int> simulated_annealing(vector<vector<int>> &matrix, int n) {
     vector<int> neighbor;
 
     while (T > 0.0) {
-        while (i < SA_MAX) {
+        while (i < configuration.SA_MAX) {
             i++;
             neighbor = generate_neighbor(s, n, gen);
 
@@ -141,7 +148,14 @@ vector<int> simulated_annealing(vector<vector<int>> &matrix, int n) {
             }
         }
 
-        T *= alpha; // atualiza temperatura
+        // Verifica qual é a função de resfriamento utilizada:
+        if(configuration.cooling_rate == GEOMETRIC) {
+            T *= configuration.alpha; // atualiza temperatura
+        }
+
+        else if(configuration.cooling_rate == LINEAR) {
+            T -= configuration.beta; // atualiza temperatura
+        }
 
         /*
             Verifica se T é suficientemente pequeno, uma vez que o seu tipo é
@@ -202,26 +216,85 @@ int main(int argc, char* argv[]) {
     }
 
     cout << "Numero de cidades: " << n << endl;
-    cout << "t0 = " << t0 << endl;
-    cout << "alfa = " << alpha << endl;
-    cout << "SA_MAX = " << SA_MAX << endl;
 
-    auto start = steady_clock::now();
+    Configuration configuration1 = {1000.0, 0.99, 0.0, 1000, GEOMETRIC};
+    Configuration configuration2 = {5000.0, 0.0, 2.0, 1000, LINEAR};
 
-    vector<int> solution = simulated_annealing(matrix, n);
+    vector<int> total_distances_results(10);
+    vector<double> durations(10);
+    int total_distance;
+
+    cout << "Configuracao 1:" << endl;
+    cout << "t0 = " << configuration1.t0 << endl;
+    cout << "alfa = " << configuration1.alpha << endl;
+    cout << "SA_max = " << configuration1.SA_MAX << endl;
+
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
+
+        vector<int> solution = simulated_annealing(matrix, n, configuration1);
+
+        auto end = steady_clock::now();
+
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: ";
+        print_solution(solution);
+
+        int total_distance = calculate_total_distance(matrix, solution, n);
+        cout << "Distancia total: " << total_distance << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        total_distances_results[i] = total_distance;
+        durations[i] = duration.count();
+    }
+
+    int best_total_distance_result = *min_element(total_distances_results.begin(), total_distances_results.end());
+    int worst_total_distance_result = *max_element(total_distances_results.begin(), total_distances_results.end());
+    double mean_total_distances_results = accumulate(total_distances_results.begin(), total_distances_results.end(), 0.0) / 10;
+
+    cout << "Melhor distancia total: " << best_total_distance_result << endl;
+    cout << "Pior distancia total: " << worst_total_distance_result << endl;
+    cout << "Media das distancias totais: " << mean_total_distances_results << endl;
+
+    cout << "Configuracao 2:" << endl;
+    cout << "t0 = " << configuration2.t0 << endl;
+    cout << "beta = " << configuration2.beta << endl;
+    cout << "SA_max = " << configuration2.SA_MAX << endl;
     
-    auto end = steady_clock::now();
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
 
-    auto duration = duration_cast<microseconds>(end - start);
-    
-    cout << "================================================================" << endl;
-    cout << "Solucao: ";
-    print_solution(solution);
+        vector<int> solution = simulated_annealing(matrix, n, configuration2);
 
-    int total_distance = calculate_total_distance(matrix, solution, n);
-    cout << "Distancia total: " << total_distance << endl;
+        auto end = steady_clock::now();
 
-    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: ";
+        print_solution(solution);
+
+        int total_distance = calculate_total_distance(matrix, solution, n);
+        cout << "Distancia total: " << total_distance << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        total_distances_results[i] = total_distance;
+        durations[i] = duration.count();
+    }
+
+    best_total_distance_result = *min_element(total_distances_results.begin(), total_distances_results.end());
+    worst_total_distance_result = *max_element(total_distances_results.begin(), total_distances_results.end());
+    mean_total_distances_results = accumulate(total_distances_results.begin(), total_distances_results.end(), 0.0) / 10;
+
+    cout << "Melhor distancia total: " << best_total_distance_result << endl;
+    cout << "Pior distancia total: " << worst_total_distance_result << endl;
+    cout << "Media das distancias totais: " << mean_total_distances_results << endl;
 
     file.close();
 

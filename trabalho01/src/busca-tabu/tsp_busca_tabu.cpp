@@ -13,6 +13,18 @@
 using namespace std;
 using namespace chrono;
 
+enum StopCriterion {
+    ITERATIONS_WITHOUT_IMPROVEMENT,
+    TOTAL_ITERATIONS
+};
+
+struct Configuration {
+    const int TABU_TENURE;
+    const int MAX_TOTAL_ITERATIONS;
+    const int MAX_ITERATIONS_WITHOUT_IMPROVEMENT;
+    StopCriterion stop_criterion;
+};
+
 constexpr int MAX_ITERATIONS_WITHOUT_IMPROVEMENT = 100; // número máximo de iterações sem melhora
 constexpr int TABU_TENURE = 5; // Duração Tabu
 
@@ -129,15 +141,11 @@ array<int, 2> select_oldest_tabu_move(vector<vector<int>> &matrix, int n, vector
     return indexes;
 }
 
-vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city) {
+vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city, Configuration configuration) {
     // Gerando a solução gulosa (usando o vizinho mais próximo):
     vector<int> s = greedy_nearest_neighbor(matrix, n, initial_city); // solução inicial
-    cout << "Solucao gulosa (usando o melhor custo beneficio - peso/valor):" << endl;
-    print_solution(s);
 
     int current_total_distance = calculate_total_distance(matrix, s, n);
-    cout << "Distancia total da solucao gulosa (usando o vizinho mais proximo): " << current_total_distance << endl;
-    cout << "--------------------------------" << endl;
 
     vector<int> sbest = s;
     int iter = 0;
@@ -155,7 +163,9 @@ vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city) {
     int new_total_distance;
     int best_total_distance = current_total_distance;
     int best_neighbor_total_distance;
-    while (iterations_without_improvement < MAX_ITERATIONS_WITHOUT_IMPROVEMENT) {
+
+    bool running = true;
+    while (running) {
         iter++;
         indexes.at(0) = -1;
         indexes.at(1) = -1;
@@ -215,7 +225,7 @@ vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city) {
         s = best_neighbor;
 
         // Atualiza a Matriz Tabu T:
-        T[indexes.at(0)][indexes.at(1) - indexes.at(0) - 1] = TABU_TENURE;
+        T[indexes.at(0)][indexes.at(1) - indexes.at(0) - 1] = configuration.TABU_TENURE;
 
         if(best_neighbor_total_distance < best_total_distance) {
             sbest = s;
@@ -227,12 +237,20 @@ vector<int> tabu_search(vector<vector<int>> &matrix, int n, int initial_city) {
             iterations_without_improvement++;
         }
 
-        cout << "Iteracao: " << iter << endl <<
-        "Movimento: " << indexes.at(0) + 1 << ", " << indexes.at(1) + 1 << endl <<
-        "Distancia total atual: " << best_neighbor_total_distance << endl <<
-        "Melhor distancia total: " << best_total_distance << endl <<
-        "--------------------------------" <<
-        endl;
+        // Verifica qual o critério de parada:
+        if(configuration.stop_criterion == ITERATIONS_WITHOUT_IMPROVEMENT) {
+            // Número máximo de iterações:
+            if(iterations_without_improvement >= configuration.MAX_ITERATIONS_WITHOUT_IMPROVEMENT) {
+                running = false;
+            }
+        }
+
+        else if(configuration.stop_criterion == TOTAL_ITERATIONS) {
+            // Número de iterações sem melhorias:
+            if(iter >= configuration.MAX_TOTAL_ITERATIONS) {
+                running = false;
+            }
+        }
     }
 
     return sbest;
@@ -284,19 +302,45 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    Configuration configuration1 = {10, 200, 0, TOTAL_ITERATIONS};
+    Configuration configuration2 = {5, 0, 100, ITERATIONS_WITHOUT_IMPROVEMENT};
+
+    cout << "Configuracao 1:" << endl;
+
     auto start = steady_clock::now();
 
-    vector<int> sbest = tabu_search(matrix, n, 1);
+    vector<int> sbest = tabu_search(matrix, n, 1, configuration1);
+    cout << "================================================================" << endl;
+    cout << "Solucao: ";
+    print_solution(sbest);
     
     auto end = steady_clock::now();
 
     auto duration = duration_cast<microseconds>(end - start);
     
     cout << "================================================================" << endl;
-    cout << "Solucao: ";
-    print_solution(sbest);
 
     int total_distance = calculate_total_distance(matrix, sbest, n);
+    cout << "Distancia total: " << total_distance << endl;
+
+    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+
+    start = steady_clock::now();
+
+    cout << "Configuracao 2:" << endl;
+    
+    sbest = tabu_search(matrix, n, 1, configuration2);
+    cout << "================================================================" << endl;
+    cout << "Solucao: ";
+    print_solution(sbest);
+    
+    end = steady_clock::now();
+
+    duration = duration_cast<microseconds>(end - start);
+    
+    cout << "================================================================" << endl;
+
+    total_distance = calculate_total_distance(matrix, sbest, n);
     cout << "Distancia total: " << total_distance << endl;
 
     cout << "Duracao: " << duration.count() << " microssegundos" << endl;

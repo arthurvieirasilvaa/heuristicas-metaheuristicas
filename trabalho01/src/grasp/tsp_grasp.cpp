@@ -8,12 +8,16 @@
 #include <chrono>
 #include <algorithm>
 #include <climits>
+#include <numeric>
 
 using namespace std;
 using namespace chrono;
 
-constexpr int MAX_ITERATIONS = 100;
-constexpr int GRASPMax = 10;
+struct Configuration {
+    double alpha;
+    const int MAX_ITERATIONS;
+    const int GRASPMax;
+};
 
 void matrixAddEdge(vector<vector<int>> &matrix, int v1, int v2, int distance) {
     matrix[v1][v2] = distance;
@@ -59,7 +63,7 @@ void print_solution(vector<int> &solution) {
     cout << endl;
 }
 
-vector<int> local_search(vector<vector<int>> &matrix, int n, vector<int> &s) {
+vector<int> local_search(vector<vector<int>> &matrix, int n, vector<int> &s, int MAX_ITERATIONS) {
     int current_total_distance = calculate_total_distance(matrix, s, n);
 
     bool solution_improved = true;
@@ -158,16 +162,16 @@ vector<int> random_greedy_construction(vector<vector<int>> &matrix, int n, const
     return s;
 }
  
-vector<int> grasp(vector<vector<int>> &matrix, int n, mt19937 &gen) {
+vector<int> grasp(vector<vector<int>> &matrix, int n, Configuration configuration, mt19937 &gen) {
     vector<int> s, sbest;
-    const double alpha = 0.3;
+    const double alpha = configuration.alpha;
     int current_total_distance;
     int best_total_distance = INT_MAX;
     int iter = 0;
 
-    while (iter < GRASPMax) {
+    while (iter < configuration.GRASPMax) {
         s = random_greedy_construction(matrix, n, alpha, gen);
-        s = local_search(matrix, n, s);
+        s = local_search(matrix, n, s, configuration.MAX_ITERATIONS);
 
         current_total_distance = calculate_total_distance(matrix, s, n);
 
@@ -238,18 +242,82 @@ int main(int argc, char* argv[]) {
     auto seed = rd() ^ system_clock::now().time_since_epoch().count();
     mt19937 gen(seed);
 
-    auto start = steady_clock::now();
+    Configuration configuration1 = {0.3, 100, 10};
+    Configuration configuration2 = {0.1, 100, 50};
 
-    vector<int> s = grasp(matrix, n, gen);
-    
-    auto end = steady_clock::now();
+    vector<int> total_distances_results(10);
+    vector<double> durations(10);
+    int total_distance;
 
-    auto duration = duration_cast<microseconds>(end - start);
+    cout << "Configuracao 1:" << endl;
+    cout << "alfa = " << configuration1.alpha << endl;
+    cout << "GRASPMax = " << configuration1.GRASPMax << endl;
 
-    print_solution(s);
-    cout << "Distancia total da solucao: " << calculate_total_distance(matrix, s, n) << endl;
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
 
-    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        vector<int> s = grasp(matrix, n, configuration1, gen);
+
+        auto end = steady_clock::now();
+
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: ";
+        print_solution(s);
+
+        int total_distance = calculate_total_distance(matrix, s, n);
+        cout << "Distancia total: " << total_distance << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        total_distances_results[i] = total_distance;
+        durations[i] = duration.count();
+    }
+
+    int best_total_distance_result = *min_element(total_distances_results.begin(), total_distances_results.end());
+    int worst_total_distance_result = *max_element(total_distances_results.begin(), total_distances_results.end());
+    double mean_total_distances_results = accumulate(total_distances_results.begin(), total_distances_results.end(), 0.0) / 10;
+
+    cout << "Melhor distancia total: " << best_total_distance_result << endl;
+    cout << "Pior distancia total: " << worst_total_distance_result << endl;
+    cout << "Media das distancias totais: " << mean_total_distances_results << endl;
+
+    cout << "Configuracao 2:" << endl;
+    cout << "alfa = " << configuration2.alpha << endl;
+    cout << "GRASPMax = " << configuration2.GRASPMax << endl;
+
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
+
+        vector<int> s = grasp(matrix, n, configuration2, gen);
+
+        auto end = steady_clock::now();
+
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+        cout << "Solucao: ";
+        print_solution(s);
+
+        int total_distance = calculate_total_distance(matrix, s, n);
+        cout << "Distancia total: " << total_distance << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        total_distances_results[i] = total_distance;
+        durations[i] = duration.count();
+    }
+
+    best_total_distance_result = *min_element(total_distances_results.begin(), total_distances_results.end());
+    worst_total_distance_result = *max_element(total_distances_results.begin(), total_distances_results.end());
+    mean_total_distances_results = accumulate(total_distances_results.begin(), total_distances_results.end(), 0.0) / 10;
+
+    cout << "Melhor distancia total: " << best_total_distance_result << endl;
+    cout << "Pior distancia total: " << worst_total_distance_result << endl;
+    cout << "Media das distancias totais: " << mean_total_distances_results << endl;
 
     file.close();
 

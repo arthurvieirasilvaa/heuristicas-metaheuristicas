@@ -7,14 +7,25 @@
 #include <chrono>
 #include <algorithm>
 #include <climits>
+#include <numeric>
 
 using namespace std;
 using namespace chrono;
 
-// Constantes utilizadas
-constexpr double t0 = 1000.0;
-constexpr double alpha = 0.99;
-constexpr int SA_MAX = 1000;
+// Função de resfriamento:
+enum CoolingRate {
+    LINEAR,
+    GEOMETRIC
+};
+
+// Valores utilizados:
+struct Configuration {
+    double t0;
+    double alpha;
+    double beta;
+    const int SA_MAX;
+    CoolingRate cooling_rate;
+};
 
 int calculate_profit(const vector<int> &profits, string current_solution) {
     int profit = 0;
@@ -56,10 +67,6 @@ string generate_initial_solution(int n, int wmax, const vector<int> &weights, mt
     }
     shuffle(indexes.begin(), indexes.end(), gen);
 
-    for(int i = 0; i < n; i++) {
-        cout << indexes[i] << " ";
-    }
-
     int current_weight = 0;
     for(int i = 0; i < n; i++) {
         int index = indexes[i];
@@ -96,7 +103,7 @@ string generate_neighbor(string s, int n, mt19937 &gen) {
     return neighbor;
 }
 
-string simulated_annealing(int n, int wmax, const vector<int> &profits, const vector<int> &weights) {
+string simulated_annealing(int n, int wmax, const vector<int> &profits, const vector<int> &weights, Configuration configuration) {
     /*
         Gerador não-determinístico para inicializar o Mersenne Twister. Se
         random_device for realmente aleatória, a seed será realmente aleatória.
@@ -108,15 +115,11 @@ string simulated_annealing(int n, int wmax, const vector<int> &profits, const ve
     mt19937 gen(seed);
     uniform_real_distribution<> dist(0.0, 1.0);
 
-    double T = t0; // temperatura inicial
+    double T = configuration.t0; // temperatura inicial
     string s = generate_initial_solution(n, wmax, weights, gen); // solução inicial aleatória
-    cout << "Solucao inicial aleatoria s0: " << s << endl;
     
     int current_profit = calculate_profit(profits, s);
     int current_weight = calculate_weight(weights, s);
-
-    cout << "Profit da solucao inicial aleatoria s0: " << current_profit << endl;
-    cout << "Peso da solucao inicial aleatoria s0: " << current_weight << endl;
 
     string s_best = s;
     int s_best_total_profit = current_profit;
@@ -126,7 +129,7 @@ string simulated_annealing(int n, int wmax, const vector<int> &profits, const ve
     int neighbor_total_profit, neighbor_weight;
 
     while (T > 0.0) {
-        while (i < SA_MAX) {
+        while (i < configuration.SA_MAX) {
             i++;
             neighbor = generate_neighbor(s, n, gen);
             neighbor_weight = calculate_weight(weights, neighbor);
@@ -155,7 +158,14 @@ string simulated_annealing(int n, int wmax, const vector<int> &profits, const ve
             }
         }
 
-        T *= alpha; // atualiza temperatura
+        // Verifica qual é a função de resfriamento utilizada:
+        if(configuration.cooling_rate == GEOMETRIC) {
+            T *= configuration.alpha; // atualiza temperatura
+        }
+
+        else if(configuration.cooling_rate == LINEAR) {
+            T -= configuration.beta; // atualiza temperatura
+        }
 
         /*
             Verifica se T é suficientemente pequeno, uma vez que o seu tipo é
@@ -226,27 +236,88 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    cout << "t0 = " << t0 << endl;
-    cout << "alfa = " << alpha << endl;
-    cout << "SA_MAX = " << SA_MAX << endl;
+    Configuration configuration1 = {1000.0, 0.99, 0.0, 1000, GEOMETRIC};
+    Configuration configuration2 = {5000.0, 0.0, 2.0, 1000, LINEAR};
 
-    auto start = steady_clock::now();
+    vector<int> profits_results(10);
+    vector<double> durations(10);
+    int total_profit, weight;
 
-    string solution = simulated_annealing(n, wmax, profits, weights);
-    
-    auto end = steady_clock::now();
+    cout << "Configuracao 1:" << endl;
+    cout << "t0 = " << configuration1.t0 << endl;
+    cout << "alfa = " << configuration1.alpha << endl;
+    cout << "SA_max = " << configuration1.SA_MAX << endl;
 
-    auto duration = duration_cast<microseconds>(end - start);
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
 
-    cout << "================================================================" << endl;
-    cout << "Solucao: " << solution << endl;
+        string solution = simulated_annealing(n, wmax, profits, weights, configuration1);
+        cout << "================================================================" << endl;
+        cout << "Solucao: " << solution << endl;
 
-    int total_profit = calculate_profit(profits, solution);
-    int weight = calculate_weight(weights, solution);
-    cout << "Profit apos o Simulated Annealing: " << total_profit << endl;
-    cout << "Peso apos o Simulated Annealing: " << weight << endl;
+        auto end = steady_clock::now();
 
-    cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+
+        int total_profit = calculate_profit(profits, solution);
+        int weight = calculate_weight(weights, solution);
+        cout << "Profit apos o Simulated Annealing: " << total_profit << endl;
+        cout << "Peso apos o Simulated Annealing: " << weight << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        profits_results[i] = total_profit;
+        durations[i] = duration.count();
+    }
+
+    int best_profit_result = *max_element(profits_results.begin(), profits_results.end());
+    int worst_profit_result = *min_element(profits_results.begin(), profits_results.end());
+    double mean_profits_results = accumulate(profits_results.begin(), profits_results.end(), 0.0) / 10;
+
+    cout << "Melhor profit: " << best_profit_result << endl;
+    cout << "Pior profit: " << worst_profit_result << endl;
+    cout << "Media dos profits: " << mean_profits_results << endl;
+
+    cout << "Configuracao 2:" << endl;
+    cout << "t0 = " << configuration2.t0 << endl;
+    cout << "beta = " << configuration2.beta << endl;
+    cout << "SA_max = " << configuration2.SA_MAX << endl;
+
+    for(int i = 0; i < 10; i++) {
+        auto start = steady_clock::now();
+
+        string solution = simulated_annealing(n, wmax, profits, weights, configuration2);
+        cout << "================================================================" << endl;
+        cout << "Solucao: " << solution << endl;
+
+        auto end = steady_clock::now();
+
+        auto duration = duration_cast<microseconds>(end - start);
+
+        cout << "================================================================" << endl;
+
+        int total_profit = calculate_profit(profits, solution);
+        int weight = calculate_weight(weights, solution);
+        cout << "Profit apos o Simulated Annealing: " << total_profit << endl;
+        cout << "Peso apos o Simulated Annealing: " << weight << endl;
+
+        cout << "Duracao: " << duration.count() << " microssegundos" << endl;
+        cout << "================================================================" << endl;
+
+        profits_results[i] = total_profit;
+        durations[i] = duration.count();
+    }
+
+    best_profit_result = *max_element(profits_results.begin(), profits_results.end());
+    worst_profit_result = *min_element(profits_results.begin(), profits_results.end());
+    mean_profits_results = accumulate(profits_results.begin(), profits_results.end(), 0.0) / 10;
+
+    cout << "Melhor profit: " << best_profit_result << endl;
+    cout << "Pior profit: " << worst_profit_result << endl;
+    cout << "Media dos profits: " << mean_profits_results << endl;
 
     file.close();
 
